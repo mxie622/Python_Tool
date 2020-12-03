@@ -1,0 +1,218 @@
+
+import jieba.analyse as analyse
+import jieba
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing import sequence
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Conv1D, Activation, BatchNormalization, Flatten, MaxPool1D
+from keras.utils import multi_gpu_model
+from keras.layers.embeddings import Embedding
+from keras.models import load_model
+from keras import regularizers
+from keras.utils.np_utils import to_categorical
+from matplotlib import pyplot as plt 
+import pandas as pd
+import numpy as np
+import string
+%matplotlib inline
+from sklearn.preprocessing import LabelEncoder
+
+from sklearn.model_selection import GridSearchCV, train_test_split
+
+raw_data = pd.read_excel('/Users/mikexie/Downloads/总表0216.xlsx', sheet_name = 'all')
+
+# 1、导入数据后重命名
+df = raw_data[1:120000]
+df.columns = ['com_name', 'com_status', 'legal_rep', 'regstered_capital', 'establish_date', 'province', 'city'
+             ,'phone_0', 'phone_1', 'email', 'uni_code', 'com_code', 'insurance_ppl', 'com_type', 'com_industry'
+             ,'website', 'address', 'com_scope']
+             
+# 2、确认数据集现存标签集合
+df = df.sample(frac=1)
+T1 = df[['com_name', 'com_type', 'com_scope', 'com_industry']]
+label = list(T1['com_industry'].unique())
+print(label)
+
+# 3、算法需要，将所有标签上数字标，即1、2、3、4。。**
+# 上标签  
+def label_dataset(row):
+    num_label = label.index(row)
+    return num_label
+
+T1['label'] = T1['com_industry'].apply(label_dataset)
+T1 = T1.dropna()
+
+# 4、中文分词公司名称 -> 提取公司名称关键词 -> 建立自定义字典 **
+region_data = pd.read_table("/Users/mikexie/region_dict.txt", index_col=False,quoting=3, sep=" ",names=['stopword'],encoding='utf-8')
+region_data_l = region_data.stopword.tolist() ######
+
+stopwords_txt = pd.read_table("/Users/mikexie/stopwords.txt", index_col=False,quoting=3, sep=" ",names=['stopword'],encoding='utf-8')
+stopwords_txt_l = stopwords_txt.stopword.tolist() ########
+
+T1['com_dict'] = T1['com_name'] + [','] + T1['com_scope']
+
+
+# 中文分词
+def chinese_word_cut(row):
+    return " ".join(jieba.cut(row))
+T1['com_dict'] = T1.com_dict.apply(chinese_word_cut)
+
+# 提取关键词 ------ 提取8个
+topK = 8
+def keyword_extract(texts, topK):
+    return " ".join(analyse.extract_tags(texts, topK, withWeight=False, allowPOS=0))
+T1['com_dict'] = T1.com_dict.apply(keyword_extract, topK = topK)
+
+# 建立5000个词的字典 --------- 自定义字典生成
+dict_words = 5000 # 字典词数
+token = Tokenizer(num_words = dict_words)
+token.fit_on_texts(T1['com_dict'])
+
+# 5、查看字典 + 重置索引
+
+# 查看数据集
+print(token.document_count)
+# print(token.word_index)
+print(T1['com_industry'][2363:2366])
+from copy import deepcopy
+T1.copy
+T2 = T1
+T2.reset_index(inplace=True,drop=True)
+T2['com_industry'][2363:2366] 
+T1.tail(5)
+
+# 6、查看各行业出现频率 -> 剔除暂时较少行业的训练 （cutoff > 10）
+se = pd.Series(T2['com_industry'])
+countDict = dict(se.value_counts())
+print(countDict)
+# cutoff = 10
+# lb = []
+# for i in countDict.items():
+#     if i[1] > cutoff:
+#         lb.append(i[0])
+# print(lb, len(countDict))
+
+# 8、使用token 字典将文字转化成数字列表 -> 训练数据
+com_dict = token.texts_to_sequences(T2['com_dict'])
+len_pad = 20 # 文字序列长度
+com_dict_padding = sequence.pad_sequences(com_dict, maxlen = len_pad) # 修正序列长度
+# x_train = com_dict_padding
+# y_train = T2['label'].tolist()
+
+# 切11万个随机样本做训练，剩余做验证
+h = 110000
+
+print(h)
+    
+x_train = com_dict_padding[0:h]
+y_train = T2['label'][0:h].tolist()
+x_test = com_dict_padding[h:T2.shape[0]]
+y_test = T2['label'][h:T2.shape[0]].tolist()
+print(T2['com_dict'][10000], x_train[10000])
+
+# 9、CNN建模 90%数据训练 10%验证
+# --------CNN 建模
+
+cls_num = len(countDict) + 1 # 确保不报错 -- 类型总数 + 1
+model = Sequential()
+model.add(Embedding(output_dim = 32, # 词向量维度
+                    input_dim = dict_words, # 自定义字典数量
+                    input_length = len_pad)
+         )
+
+
+model.add(Conv1D(256, 3, activation='relu', padding='same'))
+model.add(MaxPool1D(3, 3, padding = 'same'))
+model.add(Conv1D(32, 3, activation='relu', padding='same'))
+model.add(Flatten())
+model.add(Dropout(0.2))
+model.add(BatchNormalization())
+model.add(Dense(256, activation = "tanh")) # 全连接层
+model.add(Dropout(0.2))
+model.add(Dense(units=cls_num,
+                activation = "softmax"))
+
+batch_size = 256
+epochs = 10
+model.summary()
+model.compile(loss="sparse_categorical_crossentropy",
+             optimizer = "Adam",
+             metrics = ["accuracy"])
+
+history = model.fit(x_train,
+                    y_train,
+                    batch_size = batch_size,
+                    epochs = epochs,
+                    validation_split = 0.1
+                    )
+
+# 10、保存模型
+
+model.save('model_CNN_text.h5')
+
+# plot_model(model, to_file="model_CNN_text.png", show_shapes=True) ########### 有问题
+
+# 11、输出模型训练情况
+
+# 数字对照标签 ---- 参数表
+tb = T2[['com_industry', 'label']]
+print(type(tb))
+tb.drop_duplicates(subset=['com_industry', 'label'],keep='first',inplace=True)
+
+obs = 100001
+print(obs)
+print("随便取一个公司名行业（观测值）:", '\n', '\n',
+      "数字列表:", x_train[obs], '\n',
+      "公司名分词:", T2['com_dict'][obs], '\n',
+      "公司名原名:",T2.com_name[obs], '\n')
+print("该观测值所属实际类型:", y_train[obs], T2.com_industry[obs])
+y_new = model.predict(x_train[obs].reshape(1, len_pad)) # 最可能的5个标签
+print("预测类型:", list(y_new[0]).index(max(y_new[0]))) 
+print(len(list(y_new[0])))
+label = range(len(list(y_new[0])))
+temp_df = pd.DataFrame({'prob': list(y_new[0]), 
+                        'label':label})
+print("归属于每个行业类型的概率输出:", y_new)
+# 按概率大小排序
+temp_df.sort_values(by=['prob'], ascending=False, inplace=True)
+# 前5类型
+print(temp_df.iloc[0:5])
+
+# 12、可视化 accuracy plot + loss plot
+# 准确率图
+plt.plot(history.history["acc"])
+plt.plot(history.history["val_acc"])
+plt.title("Model accuracy")
+plt.ylabel("accuracy")
+plt.xlabel('epoch')
+plt.legend(['train', 'valid'], loc = 'upper left')
+plt.savefig('Valid_acc.png')
+plt.show()
+
+# loss function
+plt.plot(history.history["loss"])
+plt.plot(history.history["val_loss"])
+plt.title("Model loss")
+plt.ylabel("loss")
+plt.xlabel('epoch')
+plt.legend(['train', 'valid'], loc = 'upper left')
+plt.savefig('Valid_loss.png')
+plt.show()
+
+# 13、正确率以及对应易错的行业类型
+
+        
+test_len = len(y_test)
+print(test_len)
+count = 0
+for i in range(0, test_len - 1):
+    y_new = model.predict(x_test[i].reshape(1, len_pad))
+    if list(y_new[0]).index(max(y_new[0])) == y_test[i]:
+        count += 1
+print("正确率:", count / test_len)
+
+# 所属行业对照表
+tb = T2[['com_industry', 'label']]
+print(type(tb))
+tb.drop_duplicates(subset=['com_industry', 'label'],keep='first',inplace=True)
+print(tb)
