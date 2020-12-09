@@ -1,0 +1,156 @@
+# 1.Remove all irrelevant characters such as any non alphanumeric characters
+# 3.Remove words that are not relevant, such as “@” twitter mentions or urls
+# case
+import re
+
+r1 = "[0-9\s+\.\!\/_,$%^*(+\"\']+|[【\[\]】+——！，。？、：；;《》“”~@#￥%……&*（）]+"
+
+
+blog=u"【雅虎开始提示Chrome用户“升级”到Firefox】国外有关浏览器[]#$#@555. This is to be shown"
+print('raw text:', blog)
+blog_new = u""
+# Take off Hanzi
+for i in range(0,len(blog)):
+    if(blog[i]<u'\u4e00' or blog[i] > u'\u9fa5'):
+        blog_new = blog_new+blog[i]
+print('Take off hanzi:', blog_new)
+# Take off the rest chars
+data = re.sub(r1, ' ', blog_new)        
+
+print('Take off the rest chars:', data)
+
+# 2.Tokenize your text by separating it into individual words
+words = ["But often we want to find structure without having any answers available to us about how well we’re doing; we call this unsupervised learning."]
+                  
+word_list = []
+for i in range(len(words)):
+    word_list.append(words[i].split(' '))
+print(word_list)    
+
+# 6.Consider lemmatization (reduce words such as “am”, “are”, and “is” to a common form such as “be”)
+
+from nltk import word_tokenize, pos_tag
+from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
+
+lemmatizer = WordNetLemmatizer()  
+lemmatizer.lemmatize('leaving') 
+
+# POS of words
+def get_wordnet_pos(tag):
+    if tag.startswith('J'):
+        return wordnet.ADJ
+    elif tag.startswith('V'):
+        return wordnet.VERB
+    elif tag.startswith('N'):
+        return wordnet.NOUN
+    elif tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return None
+
+sentence = 'football is a family of team sports that involve, to varying degrees, kicking a ball to score a goal.'
+tokens = word_tokenize(sentence)  # toknization
+tagged_sent = pos_tag(tokens)     # POS of words
+
+wnl = WordNetLemmatizer()
+lemmas_sent = []
+for tag in tagged_sent:
+    wordnet_pos = get_wordnet_pos(tag[1]) or wordnet.NOUN
+    lemmas_sent.append(wnl.lemmatize(tag[0], pos=wordnet_pos)) # lemmatization
+
+print(lemmas_sent)
+
+# 4.Convert all characters to lowercase, in order to treat words such as “hello”, “Hello”, and “HELLO” the same
+words = "HELLO, world"
+print(words.upper(), words.lower())
+
+# 5.Consider combining misspelled or alternately spelled words to a single representation (e.g. “cool”/”kewl”/”cooool”)
+
+import re
+from collections import Counter
+
+def words(text): return re.findall(r'\w+', text.lower())
+
+# WORDS = Counter(words(open('/Users/mikexie/anaconda3/big.txt').read()))
+raw_txt = "I had seen little of Holmes lately. My marriage had drifted us away from each other. My own complete happiness, and the home-centred interests which rise up around the man who first finds himself master of his own establishment, were sufficient to absorb all my attention, while Holmes, who loathed every form of society with his whole Bohemian soul, remained in our lodgings in Baker Street, buried among his old books, and alternating from week to week between cocaine and ambition, the drowsiness of the drug, and the fierce energy of his own keen nature. He was still, as ever, deeply attracted by the study of crime, and occupied his immense faculties and extraordinary powers of observation in following out those clues, and clearing up those mysteries which had been abandoned as hopeless by the official police. From time to time I heard some vague account of his doings: of his summons to Odessa in the case of the Trepoff murder, of his clearing up of the singular tragedy of the Atkinson brothers at Trincomalee, and finally of the mission which he had accomplished so delicately and successfully for the reigning family of Holland. Beyond these signs of his activity, however, which I merely shared with all the readers of the daily press, I knew little of my former friend and companion."
+WORDS = Counter(words(raw_txt))
+class Candidate(object):
+    #  WORDS_dict={word:freq}
+    def __init__(self,WORDS_dict):
+        self.WORDS=WORDS_dict
+
+    def P(self,word):
+        "Probability of `word`."
+        # print(word,WORDS[word]/N)
+        return self.WORDS[word] / sum(self.WORDS.values())
+
+    def correction(self,word):
+        "Most probable spelling correction for word."
+        return max(self.candidates(word), key=self.P)
+
+    def candidates(self,word):
+        "Generate possible spelling corrections for word."
+        return (self.known([word]) or self.known(self.edits1(word)) or self.known(self.edits2(word)) or [word])
+
+    def known(self,words):
+        "The subset of `words` that appear in the dictionary of WORDS."
+        # print("word_list===>",set(w for w in words if w in WORDS))
+        return set(w for w in words if w in self.WORDS)
+
+    def edits1(self,word):
+        "All edits that are one edit away from `word`. "
+        # todo
+        letters = 'abcdefghijklmnopqrstuvwxyz'
+        splits = [(word[:i], word[i:]) for i in range(len(word) + 1)]
+        deletes = [L + R[1:] for L, R in splits if R]
+        transposes = [L + R[1] + R[0] + R[2:] for L, R in splits if len(R) > 1]
+        replaces = [L + c + R[1:] for L, R in splits if R for c in letters]
+        inserts = [L + c + R for L, R in splits for c in letters]
+        return set(deletes + transposes + replaces + inserts)
+
+    def edits2(self,word):
+        "All edits that are two edits away from `word`."
+        return (e2 for e1 in self.edits1(word) for e2 in self.edits1(e1))
+    
+a = Candidate(WORDS_dict=WORDS)
+print(a.correction('seeen')) 
+
+# 7.Omit determiner(Optional): ex: the, a etc...
+import numpy as np
+import collections # terms freq package
+
+class DownSampleMethod(object):
+    def __init__(self, file_name):
+        self.file_name = file_name
+        
+    def get_text(self, file_name):
+        with open(file_name,'r') as fr:
+            text = fr.read()
+            text = text.lower() # lower case letters
+            delete_ch = ['\n',':','!','?',',','.'] # Delete chars
+        for ch in delete_ch:
+            text = text.replace(ch,' ')
+        return text
+    
+    def get_dict(self, file_name, text):
+        text = self.get_text(file_name)
+        text = text.split()
+        count_dict = {}
+        for i in text:
+            count_dict[i] = count_dict.get(i,0) + 1
+# Convert to a K-V list
+        count_dict = list(count_dict.items())
+        count_dict.sort(key = lambda x:x[1], reverse = True)
+        return count_dict
+    def prob(self, count_dict, t=100):
+        count_dict = self.get_dict(file_name, text)
+        drop_word_dict = []
+        for i in range(10):
+            w_i, word_count_dictionary = count_dict[i]
+            p_w_i = max(0, 1 - np.sqrt(t/word_count_dictionary))
+            drop_word_dict.append([w_i, p_w_i])
+        return drop_word_dict
+  
+a = DownSampleMethod('./big.txt')
+a.prob(count_dict = count_dict)
