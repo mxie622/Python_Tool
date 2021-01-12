@@ -33,7 +33,7 @@ Label	Title
 0	Global Exception Handling for winforms control
 0	Converting ARBG to RGB with alpha blending
 0	Paging SQL Server 2005 Results
-0	MySQL/Apache Error in PHP MySQL query
+1	MySQL/Apache Error in PHP MySQL query
 0	My website got hacked... What should I do?
 1	How to set up unit testing for Visual Studio C++
 0	Anyone soloing using fogbugz?
@@ -308,7 +308,7 @@ Label	Title
 0	Can someone point me to some guides for WPF
 0	Stopping MSI from launching an EXE in the SYSTEM context
 0	Is version control (ie. Subversion) applicable in document tracking?
-0	Java return copy to hide future changes
+1	Java return copy to hide future changes
 0	How to bring in a web app
 1	How to get your own (local) IP-Address from an udp-socket (C/C++)
 0	How should I test a method that populates a list from a DataReader?
@@ -350,7 +350,7 @@ Label	Title
 0	Get the DefaultView DataRowView from a DataRow
 1	Alternative "architectural" approaches to javaScript client code?
 0	Does ReadUncommitted imply NoLock
-0	How to make 'pretty urls' work in php hosted in IIS?
+1	How to make 'pretty urls' work in php hosted in IIS?
 1	Mocking Asp.net-mvc Controller Context
 0	How can I take a byte array of a TIFF image and turn it into a System.Drawing.Image object?
 0	SQL Server 2003 internet connection
@@ -374,7 +374,7 @@ Label	Title
 0	COMException "Library not registered." while using System.DirectoryServices
 1	Has .NET made raw COM and DCOM programming redundant?
 1	How to make user controls know about css classes in ASP.NET
-0	How do I create a SHA1 hash in ruby?
+1	How do I create a SHA1 hash in ruby?
 0	What is a race condition?
 1	What is the best quick-read Python book out there?
 0	Can you pair program remotely?
@@ -491,7 +491,7 @@ Label	Title
 1	Does Microsoft ASP.NET Ajax Cause DOM Object Leaks?
 0	Best way to use a property to reference a Key-Value pair in a dictionary
 1	Looking for a simple JavaScript example that updates DOM
-0	Difference between foreach and for loops over an IEnumerable class in C#
+1	Difference between foreach and for loops over an IEnumerable class in C#
 1	Can .NET check other running programs command line parameters?
 1	Order an Array like another Array in C#
 0	What are the best keyboard macros for programming in windows?
@@ -555,7 +555,7 @@ Label	Title
 0	64 bit tools like BoundsChecker & Purify
 0	Problems with mouseout event
 0	In HTML, what should happen to a selected, disabled option element?
-0	I understand threading in theory but not in practice in .net
+1	I understand threading in theory but not in practice in .net
 0	Mediawiki custom tag Stops page parsing
 0	Is there a way to generalize an Apache ANT target?
 0	Garbage Collection: Is it necessary to set large objects to null in a Dispose method?
@@ -594,7 +594,7 @@ Label	Title
 1	How to force my ASP.net 2.0 app to recompile
 0	How do I allow assembly (unit testing one) to access internal properties of another assembly?
 0	How do I build a loop in JavaScript?
-0	What are the (technical) pros and cons of Flash vs AJAX/JS?
+1	What are the (technical) pros and cons of Flash vs AJAX/JS?
 0	VB6 Runtime Type Retrival
 0	Templates of Technical and Functional Specs
 1	How can you determine what version(s) of .NET are running on a system?
