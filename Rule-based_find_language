@@ -111,6 +111,14 @@ label_df = (pd.read_csv('have_label.txt', delimiter = '\t')
 from sklearn.metrics import confusion_matrix, classification_report
 confusion_matrix(label_df['Label'], label_df['Pred'])
 print(classification_report(label_df['Label'], label_df['Pred']))
+
+# label 1 predict 0
+mistakes = (label_df
+            .loc[lambda d: d['Pred'] == 0]
+            .loc[lambda d: d['Label'] == 1]['Title'])
+for i in range(mistakes.shape[0]):
+    print(mistakes.iloc[i])
+
 # Pick language with version: python3, php5 etc.
 def create_versioned(name):
     return [[{'LOWER': name}],
@@ -125,3 +133,10 @@ matcher.add("PYTHON", None, *create_versioned('python'))
 g = nlp.pipe(['i USE PYTHON 3, python3.6'
              ,'i take bypython'])
 html_print(html_generator(g, n = 2))
+
+# label 0 predict 1
+mistakes = (label_df
+            .loc[lambda d: d['Pred'] == 1]
+            .loc[lambda d: d['Label'] == 0]['Title'])
+for i in range(mistakes.shape[0]):
+    print(mistakes.iloc[i])
